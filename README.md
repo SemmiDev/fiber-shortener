@@ -57,20 +57,4 @@ git clone https://github.com/SemmiDev/fiber-shortener.git
 make up
 ```
 
-3. Install backend dependencies
-
-```bash
-go mod tidy
-```
-
-4. Watch changes in frontend
-
-```bash
-cd frontend && make watch
-```
-
-5. Run the application
-
-```bash
-make run
-```
+3. Open `http://localhost:8080` in Browser
