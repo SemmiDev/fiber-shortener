@@ -12,7 +12,7 @@ COPY app.env .
 COPY start.sh .
 COPY wait-for.sh .
 COPY db/migration ./db/migration
-COPY frontend .
+COPY frontend ./frontend
 
 EXPOSE 8080
 CMD [ "/app/main" ]
