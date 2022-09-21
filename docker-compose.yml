@@ -22,7 +22,28 @@ services:
       - PASSWORD=secret
     ports:
       - '6379:6379'
+    volumes:
+      - cache:/data
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shortener-api
+    ports:
+      - '8080:8080'
+    environment:
+      - DB_SOURCE=postgresql://root:secret@postgres:5432/fiber-shortener?sslmode=disable
+      - REDIS_HOST=redis:6379
+      - REDIS_PASSWORD=secret
+    depends_on:
+      - postgres
+      - redis
+    entrypoint: ['/app/wait-for.sh', 'postgres:5432', '--', '/app/start.sh']
+    command: ['/app/main']
 
 volumes:
   db-data:
+    driver: local
+  cache:
     driver: local

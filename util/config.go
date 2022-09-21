@@ -9,7 +9,8 @@ type Config struct {
 	DBSource          string `mapstructure:"DB_SOURCE"`
 	MigrationURL      string `mapstructure:"MIGRATION_URL"`
 	HTTPServerAddress string `mapstructure:"HTTP_SERVER_ADDRESS"`
-	RedisAddress      string `mapstructure:"REDIS_ADDRESS"`
+	RedisHost         string `mapstructure:"REDIS_HOST"`
+	RedisPassword     string `mapstructure:"REDIS_PASSWORD"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

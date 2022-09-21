@@ -43,7 +43,7 @@ func (s *server) shortenURLHandler(c *fiber.Ctx) error {
 
 	// check if url already exist in redis
 	shortURL, err := s.redisStore.Get(c.Context(), req.URL).Result()
-	if err == nil {
+	if err == nil && shortURL != "" {
 		return c.JSON(fiber.Map{
 			"short_url": host + "/" + shortURL,
 		})
@@ -62,7 +62,7 @@ func (s *server) shortenURLHandler(c *fiber.Ctx) error {
 		util.KVRedisQueue{Key: link.ShortUrl, Val: link.LongUrl},
 	)
 	return c.JSON(fiber.Map{
-		"short_url": host + "/" + shortURL,
+		"short_url": host + "/" + link.ShortUrl,
 	})
 }
 
@@ -130,8 +130,8 @@ func main() {
 
 	// create redis client and connect to redis
 	redisClient := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "secret",
+		Addr:     config.RedisHost,
+		Password: config.RedisPassword,
 		DB:       0,
 	})
 

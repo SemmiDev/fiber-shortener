@@ -3,10 +3,16 @@ run:
 sqlc:
 	sqlc generate
 up:
-	docker-compose -f docker-compose.dev.yml up -d
+	docker-compose up -d
 stop:
-	docker-compose -f docker-compose.dev.yml stop
+	docker-compose stop
 down:
+	docker-compose down
+up-dev:
+	docker-compose -f docker-compose.dev.yml up -d
+stop-dev:
+	docker-compose -f docker-compose.dev.yml stop
+down-dev:
 	docker-compose -f docker-compose.dev.yml down
 
-.PHONY: sqlc up stop down
+.PHONY: sqlc up stop up-dev stop-dev down down-dev
