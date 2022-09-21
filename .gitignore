@@ -1,0 +1,4 @@
+/.idea
+
+# nodejs modules
+frontend/node_modules

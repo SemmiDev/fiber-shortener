@@ -1,0 +1,28 @@
+version: "3.9"
+services:
+  db:
+    container_name: shortener-db
+    image: postgres:14-alpine
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    restart: always
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: fiber-shortener
+    ports:
+      - "5432:5432"
+
+  redis:
+    container_name: shortener-redis
+    image: redis:7.0.4-alpine
+    command: redis-server --requirepass secret
+    restart: always
+    environment:
+      - PASSWORD=secret
+    ports:
+      - "6379:6379"
+
+volumes:
+  db-data:
+    driver: local

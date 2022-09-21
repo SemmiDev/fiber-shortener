@@ -1,0 +1,12 @@
+### CREATE A SHORTENER LINK
+POST http://localhost:8080/shorten
+Accept: text/plain
+Content-Type: application/json
+
+{
+    "url": "https://sammidev.codes/"
+}
+
+### GET THE ORIGINAL URL
+
+GET http://localhost:8080/qxdOucfaC
