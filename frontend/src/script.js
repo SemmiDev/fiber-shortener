@@ -2,9 +2,8 @@ function shortenUrl() {
   const input = document.getElementById('url-input')
   const url = input.value
   const data = {url}
-  const origin = window.location.origin
 
-  fetch(`${origin}/shorten`, {
+  fetch(`${window.location.origin}/shorten`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
