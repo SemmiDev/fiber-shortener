@@ -3,7 +3,7 @@ function shortenUrl() {
   const url = input.value
   const data = {url}
 
-  fetch('http://localhost:8080/shorten', {
+  fetch(${window.location.origin}'/shorten', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
