@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"time"
 
@@ -18,15 +19,17 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
 	"github.com/teris-io/shortid"
+	"golang.org/x/sync/singleflight"
 )
 
 type server struct {
-	config     util.Config
-	store      db.Store
-	app        *fiber.App
-	redisStore *redis.Client
-	redisQueue *util.RedisQueue
-	generator  *shortid.Shortid
+	config                      util.Config
+	store                       db.Store
+	app                         *fiber.App
+	redisStore                  *redis.Client
+	redisQueue                  *util.RedisQueue
+	generator                   *shortid.Shortid
+	singleflightGroupResolveURL singleflight.Group
 }
 
 type request struct {
@@ -40,6 +43,38 @@ func (s *server) shortenURLHandler(c *fiber.Ctx) error {
 	}
 
 	host := string(c.Context().Host())
+
+	v, err, shared := s.singleflightGroupResolveURL.Do(req.URL, func() (interface{}, error) {
+		shortURL, err := s.redisStore.Get(c.Context(), req.URL).Result()
+		if err == nil && shortURL != "" {
+			return fmt.Sprintf("%s/%s", host, shortURL), nil
+		}
+
+		link, err := s.store.CreateLinkTx(c.Context(), db.CreateLinkParams{
+			LongUrl:  req.URL,
+			ShortUrl: s.generator.MustGenerate(),
+		})
+		if err != nil {
+			return nil, fiber.NewError(fiber.StatusInternalServerError, "cannot create short url")
+		}
+
+		go s.redisQueue.Enqueue(
+			util.KVRedisQueue{Key: link.LongUrl, Val: link.ShortUrl},
+			util.KVRedisQueue{Key: link.ShortUrl, Val: link.LongUrl},
+		)
+		return fmt.Sprintf("%s/%s", host, link.ShortUrl), nil
+	})
+	if shared {
+		log.Println("shared: ", req.URL)
+		if err != nil {
+			return err
+		} else {
+			shortURL := v.(string)
+			return c.JSON(fiber.Map{
+				"short_url": host + "/" + shortURL,
+			})
+		}
+	}
 
 	// check if url already exist in redis
 	shortURL, err := s.redisStore.Get(c.Context(), req.URL).Result()
@@ -67,9 +102,41 @@ func (s *server) shortenURLHandler(c *fiber.Ctx) error {
 }
 
 func (s *server) resolveURLHandler(c *fiber.Ctx) error {
-	shortURL := c.Params("short_url")
+	shortURL := c.Params("short_url") // also sharedProcessKey using in singleflightGroupResolveURL
 	if shortURL == "" {
 		return fiber.NewError(fiber.StatusBadRequest, "please provide short url")
+	}
+
+	v, err, shared := s.singleflightGroupResolveURL.Do(shortURL, func() (interface{}, error) {
+		longURL, err := s.redisStore.Get(c.Context(), shortURL).Result()
+		if err == nil {
+			return longURL, nil
+		}
+
+		link, err := s.store.GetLinkByShortURL(c.Context(), shortURL)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return nil, fiber.NewError(fiber.StatusNotFound, "cannot find short url")
+			}
+			return nil, fiber.NewError(fiber.StatusInternalServerError, "cannot get short url")
+		}
+
+		go s.redisQueue.Enqueue(
+			util.KVRedisQueue{Key: link.LongUrl, Val: link.ShortUrl},
+			util.KVRedisQueue{Key: link.ShortUrl, Val: link.LongUrl},
+		)
+
+		return link, nil
+	})
+
+	if shared {
+		log.Println("shared: ", shortURL)
+		if err != nil {
+			return err
+		} else {
+			url := v.(string)
+			return c.Redirect(url)
+		}
 	}
 
 	longURL, err := s.redisStore.Get(c.Context(), shortURL).Result()

@@ -10,6 +10,7 @@ require (
 	github.com/lib/pq v1.10.7
 	github.com/spf13/viper v1.13.0
 	github.com/teris-io/shortid v0.0.0-20220617161101-71ec9f2aa569
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 )
 
 require (
